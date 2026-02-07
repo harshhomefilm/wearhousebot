@@ -1,16 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" class="antialiased">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universal AI - Multimodal</title>
+    <title>Universal AI Chat - Multimedia Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -18,358 +13,715 @@
                 extend: {
                     colors: {
                         gemini: {
-                            50: '#f0f4f9', 100: '#e1e5ea', 800: '#1e1f20', 900: '#131314', accent: '#4b90ff'
+                            blue: '#4c8bf5',
+                            purple: '#d96570',
+                            dark: '#131314',
+                            darksec: '#1e1f20',
+                            hover: '#e8eaed',
+                            darkhover: '#28292a'
                         }
                     },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    }
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    typography: (theme) => ({
+                        DEFAULT: {
+                            css: {
+                                color: theme('colors.gray.800'),
+                                maxWidth: '100%',
+                                img: { borderRadius: '0.75rem' },
+                            },
+                        },
+                        invert: {
+                            css: {
+                                color: theme('colors.gray.200'),
+                            },
+                        },
+                    }),
                 }
             }
         }
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Markdown & Media */
+        .prose pre { background: #1e1f20; color: #e5e7eb; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-top: 0.5rem; }
+        .prose code { background: rgba(0,0,0,0.1); padding: 0.2em 0.4em; border-radius: 0.25em; font-size: 0.9em; }
+        .dark .prose code { background: rgba(255,255,255,0.1); }
+        
+        /* Video/Image Containers */
+        .media-container { margin-top: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.75rem; overflow: hidden; background: #000; }
+        .media-container video, .media-container iframe { width: 100%; display: block; }
+        
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; }
         
-        .markdown-body p { margin-bottom: 0.75em; line-height: 1.6; }
-        .markdown-body pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; }
-        .markdown-body code { font-family: monospace; background: rgba(0,0,0,0.1); padding: 0.2em 0.4em; border-radius: 3px; font-size: 0.9em; }
-        .dark .markdown-body code { background: rgba(255,255,255,0.1); }
-        
-        /* Generated Media Styles */
-        .ai-media-container { margin-top: 10px; margin-bottom: 10px; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .ai-image { width: 100%; height: auto; display: block; transition: transform 0.3s ease; cursor: pointer; }
-        .ai-image:hover { transform: scale(1.02); }
-        .media-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; backdrop-filter: blur(4px); }
+        .cursor-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
 
-        #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease; }
-        .dark #loading { background: #131314; color: white; }
+        #loading { position: fixed; inset: 0; background: #fff; z-index: 9999; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #555; }
+        .dark #loading { background: #131314; color: #aaa; }
     </style>
 </head>
-<body class="bg-gemini-50 text-gray-800 dark:bg-gemini-900 dark:text-gray-100 transition-colors duration-200 h-[100dvh] w-full overflow-hidden flex flex-col">
+<body class="bg-white dark:bg-gemini-dark text-gray-800 dark:text-gray-100 h-[100dvh] overflow-hidden flex flex-col">
 
     <div id="loading">
         <div class="flex flex-col items-center gap-4">
-            <i class="fa-solid fa-wand-magic-sparkles fa-spin text-4xl text-blue-500"></i>
-            <span class="text-lg font-medium">Loading AI Studio...</span>
+            <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span>Loading Multimedia Engine...</span>
         </div>
     </div>
 
-    <div id="app" class="flex flex-1 overflow-hidden relative opacity-0 transition-opacity duration-500">
+    <div id="app" class="flex h-full w-full hidden opacity-0 transition-opacity duration-500">
         
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden" onclick="toggleSidebar()"></div>
-        <aside id="sidebar" class="absolute md:relative z-30 w-72 h-full bg-gray-100 dark:bg-gemini-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col border-r border-gray-200 dark:border-gray-700 shadow-xl md:shadow-none">
-            <div class="p-4">
-                <button onclick="createNewChat()" class="w-full flex items-center gap-3 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition-colors text-sm font-medium">
-                    <i class="fa-solid fa-plus text-gray-500 dark:text-gray-300"></i>
-                    <span>New Chat</span>
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-20 hidden lg:hidden glass-effect" onclick="app.toggleSidebar()"></div>
+
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-[280px] bg-gray-50 dark:bg-gemini-darksec transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-30 flex flex-col border-r border-gray-200 dark:border-gray-700/50">
+            <div class="p-4 flex items-center justify-between">
+                <button onclick="app.startNewChat()" class="flex-1 flex items-center gap-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 px-4 py-2.5 rounded-full transition-colors text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    New Chat
+                </button>
+                <button onclick="app.toggleSidebar()" class="lg:hidden ml-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto px-2" id="chatHistoryList"></div>
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-                <button onclick="toggleSettings()" class="flex items-center gap-3 px-2 py-2 w-full hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors">
-                    <i class="fa-solid fa-gear"></i> <span>Settings</span>
+            <div class="flex-1 overflow-y-auto px-2 py-2 space-y-1" id="chat-history-list"></div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700/50 space-y-2">
+                <button onclick="app.openSettings()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Settings
+                </button>
+                <button onclick="app.toggleTheme()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <svg id="theme-icon-moon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg id="theme-icon-sun" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Toggle Theme
                 </button>
             </div>
         </aside>
 
-        <main class="flex-1 flex flex-col h-full relative min-w-0">
-            <header class="h-14 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 md:hidden bg-white dark:bg-gemini-900 z-10">
-                <button onclick="toggleSidebar()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <i class="fa-solid fa-bars text-lg"></i>
+        <main class="flex-1 flex flex-col relative h-full w-full">
+            <header class="lg:hidden p-4 border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between">
+                <button onclick="app.toggleSidebar()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <span class="font-semibold text-sm">Universal AI</span>
-                <div class="w-8"></div>
+                <span class="font-medium text-lg bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text">Universal AI</span>
+                <div class="w-6"></div>
             </header>
 
-            <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 scroll-smooth">
-                <div id="welcomeState" class="h-full flex flex-col items-center justify-center opacity-60 text-center px-4">
-                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-4">
-                        <i class="fa-solid fa-infinity text-3xl text-blue-500"></i>
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-40">
+                <div id="welcome-screen" class="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
+                    <div class="bg-gradient-to-br from-blue-500 to-purple-500 p-4 rounded-2xl shadow-lg">
+                        <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </div>
-                    <h1 class="text-2xl font-bold mb-2">Text. Images. Video.</h1>
-                    <p class="text-sm max-w-md">I can generate unlimited images and videos for free. Just ask "Generate an image of..." or "Make a video of..."</p>
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">Multimedia Ready</h1>
+                        <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">Upload images or paste video links. For image analysis, use a vision-capable model (e.g., GPT-4o, Gemini Pro, Claude 3.5 Sonnet).</p>
+                    </div>
                 </div>
+                <div id="messages" class="max-w-3xl mx-auto space-y-6 hidden"></div>
             </div>
 
-            <div class="p-4 bg-white dark:bg-gemini-900/90 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 z-20">
-                <div class="max-w-4xl mx-auto relative">
-                    <textarea 
-                        id="promptInput" rows="1" 
-                        class="w-full bg-gray-100 dark:bg-gemini-800 rounded-3xl pl-5 pr-12 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none overflow-hidden max-h-32 shadow-sm text-base"
-                        placeholder="Ask me to generate an image..."
-                        oninput="autoResize(this)"
-                        onkeydown="handleEnter(event)"
-                    ></textarea>
-                    <button id="sendBtn" onclick="sendMessage()" class="absolute right-2 bottom-2 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all disabled:opacity-50">
-                        <i class="fa-solid fa-arrow-up text-sm"></i>
-                    </button>
+            <div class="absolute bottom-0 left-0 right-0 bg-white/90 dark:bg-gemini-dark/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-700/50 p-4 transition-all" id="input-container">
+                <div class="max-w-3xl mx-auto relative">
+                    
+                    <div id="file-preview-area" class="flex gap-2 mb-2 overflow-x-auto hidden px-1">
+                        </div>
+
+                    <form onsubmit="app.handleSubmit(event)" class="relative flex items-end gap-2 bg-gray-100 dark:bg-gemini-darksec rounded-3xl p-2 border border-transparent focus-within:border-gray-300 dark:focus-within:border-gray-600 transition-colors shadow-sm">
+                        
+                        <button type="button" onclick="document.getElementById('file-input').click()" class="p-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                        </button>
+                        <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*" onchange="app.handleFileSelect(event)">
+
+                        <textarea 
+                            id="user-input" 
+                            rows="1" 
+                            class="w-full bg-transparent border-0 focus:ring-0 resize-none py-3 px-2 max-h-[150px] text-gray-800 dark:text-gray-100 placeholder-gray-500" 
+                            placeholder="Message..."
+                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                            onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); app.handleSubmit(event); }"
+                        ></textarea>
+                        
+                        <button type="submit" id="send-btn" class="p-2.5 rounded-full bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors mb-1 shadow-md">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                        </button>
+                    </form>
+                    <div class="text-center mt-2 text-xs text-gray-400">
+                        AI can make mistakes. Verify important info.
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gemini-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0" id="settingsContent">
-            <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h2 class="text-lg font-bold">Settings</h2>
-                <button onclick="toggleSettings()" class="text-gray-500 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gemini-darksec rounded-2xl w-full max-w-md shadow-2xl transform transition-all scale-95 opacity-0" id="settings-content">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-bold">Settings</h2>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">OpenRouter API Key</label>
-                    <input type="password" id="apiKeyInput" class="w-full bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 border border-transparent focus:border-blue-500 focus:outline-none text-sm" placeholder="sk-or-...">
+                    <label class="block text-sm font-medium mb-1">OpenRouter API Key</label>
+                    <input type="password" id="api-key-input" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500" placeholder="sk-or-...">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-500 mb-1">Model Name</label>
-                    <input type="text" id="modelInput" class="w-full bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 border border-transparent focus:border-blue-500 focus:outline-none text-sm" placeholder="deepseek/deepseek-r1:free">
+                    <label class="block text-sm font-medium mb-1">Model ID</label>
+                    <input type="text" id="model-input" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500" placeholder="deepseek/deepseek-r1:free">
+                    <p class="text-xs text-gray-500 mt-1">For images, use: <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">google/gemini-pro-1.5</code>, <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">openai/gpt-4o</code></p>
                 </div>
-                <div class="flex items-center justify-between pt-2">
-                    <span class="text-sm font-medium">Dark Mode</span>
-                    <button onclick="toggleTheme()" class="w-12 h-6 bg-gray-300 dark:bg-blue-600 rounded-full relative transition-colors">
-                        <div id="themeDot" class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-all shadow-md"></div>
-                    </button>
+                <div>
+                    <label class="block text-sm font-medium mb-1">System Prompt</label>
+                    <textarea id="system-prompt-input" rows="3" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500" placeholder="You are a helpful assistant..."></textarea>
                 </div>
             </div>
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/30 flex justify-end">
-                <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">Save</button>
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                <button onclick="app.closeSettings()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+                <button onclick="app.saveSettings()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Save</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // CONSTANTS & STATE
-        // ==========================================
-        const DEFAULT_MODEL = "deepseek/deepseek-r1:free";
-        // The magic prompt that teaches the LLM how to use the 'tools'
-        const SYSTEM_PROMPT = `You are an advanced multimodal AI assistant. 
-        You can generate unlimited images and videos.
-        
-        IMPORTANT RULES FOR GENERATION:
-        1. If the user asks to "generate", "draw", or "create" an IMAGE, you MUST output the prompt exactly like this:
-           {{image: detailed description of the image}}
-           
-        2. If the user asks for a VIDEO, output exactly like this:
-           {{video: detailed description of the movement or scene}}
-           
-        3. Do NOT display the image markdown syntax directly. Use the {{tag}} format.
-        4. Do NOT say "I cannot generate images". You CAN, using these tags.
-        `;
+        const app = (() => {
+            const els = {};
+            const defaults = {
+                model: 'deepseek/deepseek-r1:free',
+                systemPrompt: 'You are a helpful AI assistant. Use Markdown. If you receive images, describe or analyze them.',
+                apiKey: ''
+            };
 
-        const state = {
-            chats: JSON.parse(localStorage.getItem('chats_v2')) || [],
-            activeChatId: null,
-            settings: {
-                apiKey: localStorage.getItem('apiKey') || '',
-                model: localStorage.getItem('model') || DEFAULT_MODEL,
-                darkMode: localStorage.getItem('darkMode') === 'true'
-            },
-            isGenerating: false
-        };
+            let state = {
+                chats: [],
+                currentChatId: null,
+                settings: { ...defaults },
+                theme: 'light',
+                isGenerating: false,
+                pendingAttachments: [] // Stores Base64 of currently selected files
+            };
 
-        const els = {
-            app: document.getElementById('app'),
-            loading: document.getElementById('loading'),
-            messages: document.getElementById('messagesContainer'),
-            welcome: document.getElementById('welcomeState'),
-            input: document.getElementById('promptInput'),
-            sendBtn: document.getElementById('sendBtn'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebarOverlay'),
-            chatList: document.getElementById('chatHistoryList'),
-            settingsModal: document.getElementById('settingsModal'),
-            settingsContent: document.getElementById('settingsContent'),
-            apiKey: document.getElementById('apiKeyInput'),
-            model: document.getElementById('modelInput'),
-            themeDot: document.getElementById('themeDot')
-        };
+            function init() {
+                const ids = ['app', 'loading', 'sidebar', 'sidebar-overlay', 'chat-history-list', 'messages', 'welcome-screen', 'user-input', 'send-btn', 'settings-modal', 'settings-content', 'api-key-input', 'model-input', 'system-prompt-input', 'theme-icon-sun', 'theme-icon-moon', 'chat-container', 'file-input', 'file-preview-area'];
+                ids.forEach(id => els[id] = document.getElementById(id));
 
-        // ==========================================
-        // INIT & UI
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            if (state.settings.darkMode) document.documentElement.classList.add('dark');
-            updateThemeUI();
-
-            if (state.chats.length > 0) {
-                const lastId = localStorage.getItem('lastActiveChatId');
-                const exists = state.chats.find(c => c.id === lastId);
-                loadChat(exists ? lastId : state.chats[0].id);
-            } else {
+                loadState();
+                applyTheme();
                 renderChatList();
-            }
+                
+                if (state.currentChatId) {
+                    loadChat(state.currentChatId);
+                } else {
+                    startNewChat(false);
+                }
 
-            setTimeout(() => {
-                els.loading.style.opacity = '0';
+                // Configure Custom Renderer for Video Support
+                configureMarked();
+
                 setTimeout(() => {
                     els.loading.style.display = 'none';
-                    els.app.style.opacity = '1';
+                    els.app.classList.remove('hidden');
+                    setTimeout(() => els.app.classList.remove('opacity-0'), 50);
                 }, 500);
-            }, 500);
-        });
-
-        function autoResize(t) {
-            t.style.height = 'auto';
-            t.style.height = t.scrollHeight + 'px';
-            if (t.value === '') t.style.height = '56px';
-        }
-
-        function handleEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
             }
-        }
 
-        function toggleSidebar() {
-            const isClosed = els.sidebar.classList.contains('-translate-x-full');
-            els.sidebar.classList.toggle('-translate-x-full', !isClosed);
-            els.sidebarOverlay.classList.toggle('hidden', !isClosed);
-        }
+            // --- Multimedia & Markdown Logic ---
+            function configureMarked() {
+                const renderer = new marked.Renderer();
+                
+                // Custom Link Renderer for Auto-Embedding Videos
+                const originalLink = renderer.link.bind(renderer);
+                renderer.link = (href, title, text) => {
+                    if (!href) return text;
+                    
+                    // 1. YouTube Embed
+                    const ytMatch = href.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+                    if (ytMatch) {
+                        return `<div class="media-container"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen height="315"></iframe></div>`;
+                    }
+                    
+                    // 2. Direct Video Files (.mp4, .webm, .ogg)
+                    if (href.match(/\.(mp4|webm|ogg)$/i)) {
+                        return `<div class="media-container"><video controls playsinline src="${href}"></video></div>`;
+                    }
 
-        function toggleTheme() {
-            state.settings.darkMode = !state.settings.darkMode;
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', state.settings.darkMode);
-            updateThemeUI();
-        }
+                    return originalLink(href, title, text);
+                };
 
-        function updateThemeUI() {
-            if (state.settings.darkMode) {
-                els.themeDot.style.left = '1.75rem'; // 7 * 0.25rem
-            } else {
-                els.themeDot.style.left = '0.25rem';
+                // Custom Image Renderer for Styling
+                renderer.image = (href, title, text) => {
+                    return `<img src="${href}" alt="${text}" class="rounded-xl max-h-[400px] w-auto border border-gray-200 dark:border-gray-700 my-2" loading="lazy">`;
+                };
+
+                marked.setOptions({ renderer });
             }
-        }
 
-        function toggleSettings() {
-            const modal = els.settingsModal;
-            const content = els.settingsContent;
-            if (modal.classList.contains('hidden')) {
-                els.apiKey.value = state.settings.apiKey;
-                els.model.value = state.settings.model;
-                modal.classList.remove('hidden');
-                setTimeout(() => {
-                    content.classList.remove('scale-95', 'opacity-0');
-                    content.classList.add('scale-100', 'opacity-100');
-                }, 10);
-            } else {
-                content.classList.remove('scale-100', 'opacity-100');
-                content.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => modal.classList.add('hidden'), 200);
+            function handleFileSelect(e) {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+
+                files.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const base64 = ev.target.result;
+                        const type = file.type.startsWith('image/') ? 'image' : 'video';
+                        
+                        // Storage Check (LocalStorage 5MB Limit)
+                        if (base64.length > 500000) { // >0.5MB
+                             // We allow it for the SESSION, but flag it as "do not persist" to avoid crash?
+                             // For simplicity in this demo, we assume user accepts risk or uses small files.
+                             // To be safe: We will use the base64, but maybe show a warning.
+                        }
+
+                        state.pendingAttachments.push({
+                            type,
+                            data: base64,
+                            name: file.name
+                        });
+                        renderFilePreviews();
+                    };
+                    reader.readAsDataURL(file);
+                });
+                
+                // Reset input so same file can be selected again
+                e.target.value = '';
             }
-        }
 
-        function saveSettings() {
-            state.settings.apiKey = els.apiKey.value.trim();
-            state.settings.model = els.model.value.trim() || DEFAULT_MODEL;
-            localStorage.setItem('apiKey', state.settings.apiKey);
-            localStorage.setItem('model', state.settings.model);
-            toggleSettings();
-        }
-
-        // ==========================================
-        // CORE CHAT LOGIC
-        // ==========================================
-        function createNewChat() {
-            const newChat = { id: Date.now().toString(), title: "New Conversation", messages: [] };
-            state.chats.unshift(newChat);
-            saveChats();
-            loadChat(newChat.id);
-            if (window.innerWidth < 768) toggleSidebar();
-        }
-
-        function loadChat(id) {
-            state.activeChatId = id;
-            localStorage.setItem('lastActiveChatId', id);
-            renderChatList();
-            renderMessages(state.chats.find(c => c.id === id)?.messages || []);
-        }
-
-        function saveChats() {
-            localStorage.setItem('chats_v2', JSON.stringify(state.chats));
-        }
-
-        function deleteChat(e, id) {
-            e.stopPropagation();
-            if(!confirm("Delete chat?")) return;
-            state.chats = state.chats.filter(c => c.id !== id);
-            saveChats();
-            if(state.activeChatId === id) {
-                state.activeChatId = null;
-                state.chats.length ? loadChat(state.chats[0].id) : (renderChatList(), renderMessages([]));
-            } else {
-                renderChatList();
-            }
-        }
-
-        function renderChatList() {
-            els.chatList.innerHTML = '';
-            if (state.chats.length === 0) {
-                els.chatList.innerHTML = `<div class="text-center text-gray-400 mt-10 text-xs">No chats yet</div>`;
-                return;
-            }
-            state.chats.forEach(chat => {
-                const isActive = chat.id === state.activeChatId;
-                const div = document.createElement('div');
-                div.className = `group flex items-center justify-between p-2 rounded-lg cursor-pointer mb-1 text-sm ${isActive ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`;
-                div.onclick = () => loadChat(chat.id);
-                div.innerHTML = `
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <i class="fa-regular fa-message ${isActive ? 'text-blue-500' : 'text-gray-400'}"></i>
-                        <span class="truncate max-w-[140px]">${chat.title}</span>
+            function renderFilePreviews() {
+                const container = els.filePreviewArea;
+                if (state.pendingAttachments.length === 0) {
+                    container.classList.add('hidden');
+                    return;
+                }
+                
+                container.classList.remove('hidden');
+                container.innerHTML = state.pendingAttachments.map((file, index) => `
+                    <div class="relative group flex-shrink-0">
+                        ${file.type === 'image' 
+                            ? `<img src="${file.data}" class="h-16 w-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600">`
+                            : `<div class="h-16 w-16 bg-gray-800 rounded-lg flex items-center justify-center text-white text-xs border border-gray-600">VIDEO</div>`
+                        }
+                        <button onclick="app.removeAttachment(${index})" class="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600 shadow-sm">&times;</button>
                     </div>
-                    <button onclick="deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"><i class="fa-solid fa-trash"></i></button>
-                `;
-                els.chatList.appendChild(div);
-            });
-        }
-
-        // ==========================================
-        // RENDERING & PARSING (THE MAGIC)
-        // ==========================================
-        function renderMessages(messages) {
-            els.messages.innerHTML = '';
-            if (messages.length === 0) {
-                els.welcome.style.display = 'flex';
-            } else {
-                els.welcome.style.display = 'none';
-                messages.forEach(msg => appendMessageToDOM(msg));
-                scrollToBottom();
+                `).join('');
             }
-        }
 
-        // Parse content to inject Images/Videos
-        function parseContent(content) {
-            // Regex for Image Tag: {{image: prompt}}
-            let parsed = content.replace(/{{image:\s*(.*?)}}/g, (match, prompt) => {
-                const seed = Math.floor(Math.random() * 100000);
-                const safePrompt = encodeURIComponent(prompt.trim());
-                // Pollinations URL
-                const url = `https://image.pollinations.ai/prompt/${safePrompt}?nologo=true&seed=${seed}&width=1024&height=768`;
-                return `
-                <div class="ai-media-container">
-                    <img src="${url}" class="ai-image" alt="${prompt}" loading="lazy" onclick="window.open(this.src, '_blank')">
-                    <div class="media-badge"><i class="fa-solid fa-image"></i> AI Generated</div>
-                </div>`;
-            });
+            function removeAttachment(index) {
+                state.pendingAttachments.splice(index, 1);
+                renderFilePreviews();
+            }
 
-            // Regex for Video Tag: {{video: prompt}}
-            // Note: Pollinations video often redirects to a waiting page or returns a GIF, we use the image endpoint with model=turbo for fast generation as frames or their video endpoint if available.
-            // For stability in zero-build, we treat video as a high-fidelity rendering or specific video endpoint link.
-            parsed = parsed.replace(/{{video:\s*(.*?)}}/g, (match, prompt) => {
-                 const seed = Math.floor(Math.random() * 100000);
-                 const safePrompt = encodeURIComponent(prompt.trim());
-                 // Using Pollinations video endpoint (often requires opening in new tab or specific embed handling)
-                 // A safer embedded zero-build approach for "Unlimited Video" is prompting their gif generator or linking out.
-                 // We will generate a link card.
-                 return `
-                 <div class="ai-media-container bg-black rounded-xl p-4 text-center">
-                    <div class="text-white mb-2"><i class="fa-solid fa-film text-2xl"></i></div>
-                    <p class="text-gray-300 text-sm mb-3">Video generation for: "${prompt.trim()}"</p>
-                    <a href="https://pollinations.ai/p/${safePrompt}?width=720&height=1280&mo
+            // --- State Management ---
+            function loadState() {
+                const saved = localStorage.getItem('universal_ai_chat_state_v2');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        state.chats = parsed.chats || [];
+                        state.settings = { ...defaults, ...parsed.settings };
+                        state.theme = parsed.theme || 'light';
+                        if (parsed.currentChatId && state.chats.find(c => c.id === parsed.currentChatId)) {
+                            state.currentChatId = parsed.currentChatId;
+                        }
+                    } catch(e) { console.error('State load error', e); }
+                }
+            }
+
+            function saveState() {
+                try {
+                    localStorage.setItem('universal_ai_chat_state_v2', JSON.stringify({
+                        chats: state.chats,
+                        settings: state.settings,
+                        theme: state.theme,
+                        currentChatId: state.currentChatId
+                    }));
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        alert('Storage Full! Image/Video history might not be saved. Clear old chats.');
+                    }
+                }
+            }
+
+            // --- Chat Logic ---
+            function startNewChat(forceRender = true) {
+                const newChat = {
+                    id: Date.now().toString(),
+                    title: 'New Chat',
+                    messages: [],
+                    timestamp: Date.now()
+                };
+                state.chats.unshift(newChat);
+                state.currentChatId = newChat.id;
+                saveState();
+                if (forceRender) {
+                    renderChatList();
+                    loadChat(newChat.id);
+                    if (window.innerWidth < 1024) toggleSidebar(false);
+                }
+            }
+
+            function loadChat(chatId) {
+                state.currentChatId = chatId;
+                const chat = state.chats.find(c => c.id === chatId);
+                if (!chat) return;
+
+                els.welcomeScreen.classList.add('hidden');
+                els.messages.classList.remove('hidden');
+                els.messages.innerHTML = ''; 
+                
+                chat.messages.forEach(msg => appendMessageToUI(msg));
+                
+                renderChatList();
+                scrollToBottom();
+
+                if (chat.messages.length === 0) {
+                    els.welcomeScreen.classList.remove('hidden');
+                    els.messages.classList.add('hidden');
+                }
+            }
+
+            function deleteChat(e, id) {
+                e.stopPropagation();
+                if(!confirm('Delete this chat?')) return;
+                state.chats = state.chats.filter(c => c.id !== id);
+                if (state.currentChatId === id) {
+                    state.currentChatId = null;
+                    if (state.chats.length > 0) loadChat(state.chats[0].id);
+                    else startNewChat();
+                } else {
+                    renderChatList();
+                }
+                saveState();
+            }
+
+            // --- API Integration (Updated for Multimodal) ---
+            async function handleSubmit(e) {
+                if (e) e.preventDefault();
+                if (state.isGenerating) return;
+
+                const input = els.userInput.value.trim();
+                const attachments = [...state.pendingAttachments]; // Copy attachments
+                
+                if (!input && attachments.length === 0) return;
+                if (!state.settings.apiKey) {
+                    openSettings();
+                    alert('Please enter your OpenRouter API Key first.');
+                    return;
+                }
+
+                // UI Cleanup
+                els.userInput.value = '';
+                els.userInput.style.height = 'auto';
+                state.pendingAttachments = [];
+                renderFilePreviews();
+                
+                // Construct Message Content
+                // If we have attachments, the content is an array (OpenAI Vision standard)
+                // If text only, content is a string
+                let userContent;
+                let uiContent = input; // For display in local UI
+
+                if (attachments.length > 0) {
+                    // Vision Format
+                    userContent = [
+                        { type: "text", text: input || " Analyze this image." }
+                    ];
+                    
+                    // Add images to API payload
+                    attachments.forEach(att => {
+                        if (att.type === 'image') {
+                            userContent.push({
+                                type: "image_url",
+                                image_url: { url: att.data }
+                            });
+                            // Append to UI display markdown
+                            uiContent += `\n\n![User Image](${att.data})`;
+                        } else {
+                            // Video handling (Most APIs don't take video bytes directly yet, usually URLs)
+                            // We just display it locally and mention it in text
+                            uiContent += `\n\n<video controls src="${att.data}" class="max-h-[300px] rounded-lg"></video>`;
+                            userContent[0].text += ` [User attached a video file]`; 
+                        }
+                    });
+                } else {
+                    userContent = input;
+                }
+
+                addMessage('user', uiContent, userContent); // Store raw API content separately if needed, but for simplicity we store the mixed one or rebuild it
+                // Actually, to keep storage simple, we store the 'uiContent' (Markdown string with base64)
+                // But for the API call, we need to reconstruct the object if it contains base64 images.
+                
+                state.isGenerating = true;
+                els.sendBtn.disabled = true;
+                
+                const aiMsgId = addMessage('assistant', ''); 
+                let fullResponse = "";
+
+                try {
+                    const chat = state.chats.find(c => c.id === state.currentChatId);
+                    
+                    // Build History for Context
+                    // We need to parse back the UI content to API content for history, 
+                    // OR just send text history to save tokens/complexity, only sending images for current turn.
+                    // STRATEGY: For this lightweight clone, we send previous messages as TEXT ONLY 
+                    // to avoid massive token usage/errors with base64 in history, 
+                    // BUT we send the Current Message as full Multimodal.
+                    
+                    const history = chat.messages.slice(-6, -1).map(m => ({
+                        role: m.role,
+                        content: typeof m.content === 'string' ? m.content.replace(/!\[.*?\]\(data:.*?\)/g, '[Image]') : "..." // Strip massive base64 from history context
+                    }));
+
+                    // Current Message Object
+                    const currentMsgObj = { role: "user", content: userContent };
+
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${state.settings.apiKey}`,
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": window.location.href,
+                            "X-Title": "Universal AI Chat"
+                        },
+                        body: JSON.stringify({
+                            model: state.settings.model,
+                            messages: [
+                                { role: "system", content: state.settings.systemPrompt },
+                                ...history,
+                                currentMsgObj
+                            ],
+                            stream: true
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        throw new Error(errData.error?.message || `API Error: ${response.status}`);
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split("\n");
+
+                        for (const line of lines) {
+                            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                                try {
+                                    const json = JSON.parse(line.substring(6));
+                                    const content = json.choices[0]?.delta?.content || "";
+                                    fullResponse += content;
+                                    updateMessageUI(aiMsgId, fullResponse, true);
+                                    scrollToBottom();
+                                } catch (e) {}
+                            }
+                        }
+                    }
+
+                    updateMessageUI(aiMsgId, fullResponse, false);
+                    saveMessageToState('assistant', fullResponse);
+                    
+                    if (chat.messages.length <= 2) generateTitle(input || "Image Chat");
+
+                } catch (error) {
+                    updateMessageUI(aiMsgId, `**Error:** ${error.message}\n\n*Tip: Check if your model supports images.*`, false);
+                    saveMessageToState('assistant', `Error: ${error.message}`);
+                } finally {
+                    state.isGenerating = false;
+                    els.sendBtn.disabled = false;
+                    saveState();
+                }
+            }
+
+            function addMessage(role, uiContent, apiContent = null) {
+                const chat = state.chats.find(c => c.id === state.currentChatId);
+                // We mainly store uiContent (markdown string) for local rendering
+                // 'apiContent' is transient for the current request usually
+                const msgObj = { role, content: uiContent };
+                
+                chat.messages.push(msgObj);
+                saveState();
+
+                els.welcomeScreen.classList.add('hidden');
+                els.messages.classList.remove('hidden');
+                return appendMessageToUI(msgObj, true);
+            }
+
+            function saveMessageToState(role, content) {
+                const chat = state.chats.find(c => c.id === state.currentChatId);
+                const lastMsg = chat.messages[chat.messages.length - 1];
+                if (lastMsg && lastMsg.role === role) {
+                    lastMsg.content = content;
+                    saveState();
+                }
+            }
+
+            function generateTitle(text) {
+                const chat = state.chats.find(c => c.id === state.currentChatId);
+                let title = text.slice(0, 30);
+                if (text.length > 30) title += '...';
+                chat.title = title;
+                renderChatList();
+                saveState();
+            }
+
+            // --- UI Rendering ---
+            function appendMessageToUI(msg, isNew = false) {
+                const id = 'msg-' + Math.random().toString(36).substr(2, 9);
+                const div = document.createElement('div');
+                div.id = id;
+                div.className = `flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`;
+                
+                const bubble = document.createElement('div');
+                bubble.className = `max-w-[95%] md:max-w-[85%] rounded-2xl p-4 ${
+                    msg.role === 'user' 
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-br-none' 
+                    : 'text-gray-800 dark:text-gray-100 w-full'
+                }`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'prose dark:prose-invert text-sm md:text-base leading-relaxed break-words max-w-none';
+                
+                if (msg.role === 'assistant' && msg.content === '') {
+                    contentDiv.innerHTML = '<span class="cursor-blink">|</span>';
+                } else {
+                    // Pre-process video tags if they exist in content manually
+                    // (Our Marked config handles links, but if we injected raw HTML video tags, we trust them)
+                    contentDiv.innerHTML = marked.parse(msg.content);
+                }
+
+                if (msg.role === 'assistant') {
+                    const row = document.createElement('div');
+                    row.className = 'flex gap-3 w-full';
+                    
+                    const icon = document.createElement('div');
+                    icon.className = 'w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white flex-shrink-0 mt-1';
+                    icon.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>';
+                    
+                    row.appendChild(icon);
+                    row.appendChild(bubble); // Bubble goes inside row
+                    div.appendChild(row);
+                } else {
+                    div.appendChild(bubble);
+                }
+
+                els.messages.appendChild(div);
+                
+                if(isNew) scrollToBottom();
+                return id;
+            }
+
+            function updateMessageUI(id, content, isStreaming) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const contentDiv = el.querySelector('.prose');
+                contentDiv.innerHTML = marked.parse(content + (isStreaming ? ' \u2588' : ''));
+            }
+
+            function renderChatList() {
+                els.chatHistoryList.innerHTML = '';
+                state.chats.forEach(chat => {
+                    const btn = document.createElement('div');
+                    const isActive = chat.id === state.currentChatId;
+                    btn.className = `group flex items-center justify-between p-2.5 rounded-lg text-sm cursor-pointer transition-colors ${isActive ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`;
+                    btn.onclick = () => {
+                        if (window.innerWidth < 1024) toggleSidebar(false);
+                        loadChat(chat.id);
+                    };
+
+                    btn.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                            <span class="truncate">${chat.title}</span>
+                        </div>
+                        <button onclick="app.deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-opacity">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    `;
+                    els.chatHistoryList.appendChild(btn);
+                });
+            }
+
+            function scrollToBottom() {
+                const container = els.chatContainer;
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // --- Helpers ---
+            function toggleSidebar(forceState) {
+                const sb = els.sidebar;
+                const overlay = els.sidebarOverlay;
+                const isClosed = sb.classList.contains('-translate-x-full');
+                const shouldOpen = forceState !== undefined ? forceState : isClosed;
+                
+                sb.classList.toggle('-translate-x-full', !shouldOpen);
+                overlay.classList.toggle('hidden', !shouldOpen);
+            }
+
+            function openSettings() {
+                els.apiKeyInput.value = state.settings.apiKey;
+                els.modelInput.value = state.settings.model;
+                els.systemPromptInput.value = state.settings.systemPrompt;
+                els.settingsModal.classList.remove('hidden');
+                setTimeout(() => {
+                    els.settingsContent.classList.remove('scale-95', 'opacity-0');
+                    els.settingsContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+
+            function closeSettings() {
+                els.settingsContent.classList.remove('scale-100', 'opacity-100');
+                els.settingsContent.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => els.settingsModal.classList.add('hidden'), 200);
+            }
+
+            function saveSettings() {
+                state.settings.apiKey = els.apiKeyInput.value.trim();
+                state.settings.model = els.modelInput.value.trim() || defaults.model;
+                state.settings.systemPrompt = els.systemPromptInput.value.trim() || defaults.systemPrompt;
+                saveState();
+                closeSettings();
+            }
+
+            function toggleTheme() {
+                state.theme = state.theme === 'light' ? 'dark' : 'light';
+                applyTheme();
+                saveState();
+            }
+
+            function applyTheme() {
+                const html = document.documentElement;
+                if (state.theme === 'dark') {
+                    html.classList.add('dark');
+                    els.themeIconSun.classList.add('hidden');
+                    els.themeIconMoon.classList.remove('hidden');
+                } else {
+                    html.classList.remove('dark');
+                    els.themeIconSun.classList.remove('hidden');
+                    els.themeIconMoon.classList.add('hidden');
+                }
+            }
+
+            return {
+                init, toggleSidebar, startNewChat, handleSubmit, openSettings, closeSettings, saveSettings, toggleTheme, deleteChat,
+                handleFileSelect, removeAttachment
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
